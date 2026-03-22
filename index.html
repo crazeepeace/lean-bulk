@@ -474,6 +474,210 @@
   .tag-rest { background: var(--border); color: var(--text2); }
   .tag-free { background: var(--accent-bg); color: var(--accent-dark); }
   .tag-cheat { background: var(--purple-bg); color: var(--purple); }
+
+  /* Edit screen */
+  .edit-day-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px 12px;
+  }
+  .edit-day-tabs::-webkit-scrollbar { display: none; }
+
+  .edit-tab {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--text2);
+    border: none;
+    cursor: pointer;
+  }
+  .edit-tab.active { background: var(--text); color: var(--card); }
+
+  .edit-slot-group { margin-bottom: 16px; padding: 0 16px; }
+
+  .edit-slot-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 4px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .add-food-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .edit-food-card {
+    background: var(--card);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .edit-food-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--border);
+    gap: 10px;
+    cursor: pointer;
+  }
+  .edit-food-row:last-child { border-bottom: none; }
+  .edit-food-row:active { background: var(--bg); }
+
+  .edit-food-info { flex: 1; min-width: 0; }
+  .edit-food-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .edit-food-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .edit-chevron { font-size: 14px; color: var(--text3); flex-shrink: 0; }
+
+  /* Edit food modal (slide-up panel) */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-sheet {
+    width: 100%;
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 0 0 calc(20px + var(--safe-bottom));
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  .modal-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 16px;
+  }
+
+  .modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    text-align: center;
+    padding-bottom: 16px;
+    border-bottom: 0.5px solid var(--border);
+    margin: 0 16px;
+  }
+
+  .modal-body { padding: 16px; }
+
+  .field-group { margin-bottom: 14px; }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+  }
+
+  .field-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 0.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { outline: none; border-color: var(--blue); }
+
+  .macro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 16px;
+    margin-top: 6px;
+  }
+
+  .btn-save {
+    flex: 1;
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    background: var(--blue);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-delete {
+    padding: 13px 18px;
+    border-radius: 12px;
+    border: none;
+    background: var(--bg);
+    color: var(--red);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-cancel {
+    flex: 1;
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .reset-bar {
+    margin: 0 16px 16px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .reset-label { font-size: 13px; color: var(--text2); }
+  .reset-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -515,6 +719,60 @@
   <div id="history-list"></div>
 </div>
 
+<!-- Screen: Edit -->
+<div class="screen" id="screen-edit">
+  <div class="screen-title" style="padding:16px 20px 8px;">Edit Plan</div>
+  <div class="reset-bar">
+    <span class="reset-label">Reset all foods to defaults</span>
+    <button class="reset-btn" onclick="resetAllEdits()">Reset</button>
+  </div>
+  <div class="edit-day-tabs" id="edit-day-tabs"></div>
+  <div id="edit-slots"></div>
+</div>
+
+<!-- Edit Food Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Edit Food</div>
+    <div class="modal-body">
+      <div class="field-group">
+        <div class="field-label">Food Name</div>
+        <input class="field-input" id="f-name" type="text" placeholder="e.g. Greek Yogurt">
+      </div>
+      <div class="macro-grid">
+        <div class="field-group">
+          <div class="field-label">Calories</div>
+          <input class="field-input" id="f-cal" type="number" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Cost ($)</div>
+          <input class="field-input" id="f-cost" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Protein (g)</div>
+          <input class="field-input" id="f-prot" type="number" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Fat (g)</div>
+          <input class="field-input" id="f-fat" type="number" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Carbs (g)</div>
+          <input class="field-input" id="f-carb" type="number" inputmode="numeric" placeholder="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveFood()">Save</button>
+      <button class="btn-delete" id="btn-delete" onclick="deleteFood()">Delete</button>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Bottom Nav -->
 <div class="bottom-nav">
   <button class="nav-btn active" id="nav-today" onclick="showScreen('today')">
@@ -524,6 +782,10 @@
   <button class="nav-btn" id="nav-history" onclick="showScreen('history')">
     <span class="nav-icon">&#x1F4CA;</span>
     <span class="nav-label">History</span>
+  </button>
+  <button class="nav-btn" id="nav-edit" onclick="showScreen('edit')">
+    <span class="nav-icon">&#x270F;&#xFE0F;</span>
+    <span class="nav-label">Edit Plan</span>
   </button>
 </div>
 
@@ -808,15 +1070,14 @@ function renderDay(day) {
     else if (slot.free) badgeHtml = `<span class="slot-badge free">free</span>`;
     else if (slot.name === 'Morning' && data.lift) badgeHtml = `<span class="slot-badge lift">lift day</span>`;
 
-    group.innerHTML = `<div class="slot-label">${slot.name} <span style="display:flex;align-items:center;gap:6px;">${checkedCount}/${slot.foods.length}${badgeHtml}</span></div>`;
+    const liveFoods = getLiveSlotFoods(day, slot.name);
+    group.innerHTML = `<div class="slot-label">${slot.name} <span style="display:flex;align-items:center;gap:6px;">${liveFoods.filter(f=>isChecked(date,day,slot.name,f.name)).length}/${liveFoods.length}${badgeHtml}</span></div>`;
 
     const card = document.createElement('div');
     card.className = 'slot-card';
 
-    slot.foods.forEach(food => {
+    liveFoods.forEach(food => {
       const checked = isChecked(date, day, slot.name, food.name);
-      const row = document.createElement('div');
-      row.className = 'food-row' + (checked ? ' checked' : '');
 
       const freeBadge = food.free ? '<span class="free-badge">free</span>' : '';
       const macroStr = food.cal > 0
@@ -824,6 +1085,8 @@ function renderDay(day) {
         : 'Not tracked — free choice';
       const costStr = food.cost > 0 ? '$' + food.cost.toFixed(2) : '—';
 
+      const row = document.createElement('div');
+      row.className = 'food-row' + (checked ? ' checked' : '');
       row.innerHTML = `
         <div class="checkbox">
           <svg class="checkmark" viewBox="0 0 12 9" fill="none">
@@ -840,9 +1103,9 @@ function renderDay(day) {
         const cur = isChecked(date, day, slot.name, food.name);
         setChecked(date, day, slot.name, food.name, !cur);
         row.classList.toggle('checked', !cur);
-        // update slot counter
-        const newCount = slot.foods.filter(f => isChecked(date, day, slot.name, f.name)).length;
-        group.querySelector('.slot-label span').innerHTML = `${newCount}/${slot.foods.length}${badgeHtml}`;
+        const lf = getLiveSlotFoods(day, slot.name);
+        const newCount = lf.filter(f => isChecked(date, day, slot.name, f.name)).length;
+        group.querySelector('.slot-label span').innerHTML = `${newCount}/${lf.length}${badgeHtml}`;
         updateSummary();
         updateDayPills();
       });
@@ -920,6 +1183,238 @@ function renderHistory() {
   });
 }
 
+// ── EDIT PLAN LOGIC ──
+
+const EDIT_KEY = 'lb_plan_edits';
+let editDay = DAY_NAMES[0];
+let modalCtx = null; // { day, slotName, foodIdx, isNew }
+
+function loadEdits() {
+  try {
+    const raw = localStorage.getItem(EDIT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveEdits(edits) {
+  try { localStorage.setItem(EDIT_KEY, JSON.stringify(edits)); } catch(e) {}
+}
+
+// Get live food data (default merged with any saved edits)
+function getLiveFood(day, slotName, foodIdx) {
+  const edits = loadEdits();
+  const key = `${day}__${slotName}__${foodIdx}`;
+  const base = DAYS_DATA[day].slots.find(s => s.name === slotName)?.foods[foodIdx];
+  if (!base) return null;
+  return edits[key] ? { ...base, ...edits[key] } : { ...base };
+}
+
+function getLiveSlotFoods(day, slotName) {
+  const edits = loadEdits();
+  const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
+  if (!slot) return [];
+  const base = slot.foods.map((f, i) => {
+    const key = `${day}__${slotName}__${i}`;
+    return edits[key] ? { ...f, ...edits[key] } : { ...f };
+  });
+  // Also include any added foods (idx >= base length)
+  const added = [];
+  Object.keys(edits).forEach(k => {
+    const [d, s, iStr] = k.split('__');
+    const i = parseInt(iStr);
+    if (d === day && s === slotName && i >= slot.foods.length && edits[k] && !edits[k]._deleted) {
+      added[i - slot.foods.length] = { ...edits[k], _addedIdx: i };
+    }
+  });
+  const combined = [...base.filter((f,i) => {
+    const key = `${day}__${slotName}__${i}`;
+    return !edits[key]?._deleted;
+  }), ...added.filter(Boolean)];
+  return combined;
+}
+
+function openModal(day, slotName, foodIdx, isNew) {
+  modalCtx = { day, slotName, foodIdx, isNew };
+  const edits = loadEdits();
+  let food;
+  if (isNew) {
+    food = { name: '', cal: '', prot: '', fat: '', carb: '', cost: '' };
+  } else {
+    const key = `${day}__${slotName}__${foodIdx}`;
+    const base = DAYS_DATA[day].slots.find(s => s.name === slotName)?.foods[foodIdx]
+      || edits[key] || {};
+    food = edits[key] ? { ...base, ...edits[key] } : { ...base };
+  }
+
+  document.getElementById('modal-title').textContent = isNew ? 'Add Food' : 'Edit Food';
+  document.getElementById('f-name').value = food.name || '';
+  document.getElementById('f-cal').value = food.cal ?? '';
+  document.getElementById('f-prot').value = food.prot ?? '';
+  document.getElementById('f-fat').value = food.fat ?? '';
+  document.getElementById('f-carb').value = food.carb ?? '';
+  document.getElementById('f-cost').value = food.cost ?? '';
+  document.getElementById('btn-delete').style.display = isNew ? 'none' : 'block';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalCtx = null;
+}
+
+function saveFood() {
+  if (!modalCtx) return;
+  const { day, slotName, foodIdx, isNew } = modalCtx;
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  const edits = loadEdits();
+  let idx = foodIdx;
+
+  if (isNew) {
+    const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
+    const baseLen = slot ? slot.foods.length : 0;
+    // Find next available index
+    let next = baseLen;
+    while (edits[`${day}__${slotName}__${next}`]) next++;
+    idx = next;
+  }
+
+  const key = `${day}__${slotName}__${idx}`;
+  edits[key] = {
+    name,
+    cal: parseFloat(document.getElementById('f-cal').value) || 0,
+    prot: parseFloat(document.getElementById('f-prot').value) || 0,
+    fat: parseFloat(document.getElementById('f-fat').value) || 0,
+    carb: parseFloat(document.getElementById('f-carb').value) || 0,
+    cost: parseFloat(document.getElementById('f-cost').value) || 0,
+  };
+  saveEdits(edits);
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalCtx = null;
+  renderEditDay(day);
+  // Refresh today view if on same day
+  if (currentScreen === 'today') renderDay(currentDay);
+}
+
+function deleteFood() {
+  if (!modalCtx || modalCtx.isNew) return;
+  const { day, slotName, foodIdx } = modalCtx;
+  const edits = loadEdits();
+  const key = `${day}__${slotName}__${foodIdx}`;
+  const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
+  if (slot && foodIdx >= slot.foods.length) {
+    // It's an added food — fully remove
+    delete edits[key];
+  } else {
+    // It's a base food — mark deleted
+    edits[key] = { ...edits[key], _deleted: true };
+  }
+  saveEdits(edits);
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalCtx = null;
+  renderEditDay(day);
+  if (currentScreen === 'today') renderDay(currentDay);
+}
+
+function resetAllEdits() {
+  if (!confirm('Reset all foods to their original values? This cannot be undone.')) return;
+  try { localStorage.removeItem(EDIT_KEY); } catch(e) {}
+  renderEditDay(editDay);
+  if (currentScreen === 'today') renderDay(currentDay);
+}
+
+function renderEditDay(day) {
+  editDay = day;
+  document.querySelectorAll('.edit-tab').forEach(t => t.classList.toggle('active', t.dataset.day === day));
+  const data = DAYS_DATA[day];
+  const container = document.getElementById('edit-slots');
+  container.innerHTML = '';
+
+  data.slots.forEach(slot => {
+    const group = document.createElement('div');
+    group.className = 'edit-slot-group';
+
+    const liveFoods = getLiveSlotFoods(day, slot.name);
+    const slotIdx = data.slots.indexOf(slot);
+
+    group.innerHTML = `<div class="edit-slot-header">
+      ${slot.name}
+      <button class="add-food-btn" data-day="${day}" data-slot="${slot.name}">+ Add food</button>
+    </div>`;
+    group.querySelector('.add-food-btn').addEventListener('click', () => {
+      const slot2 = DAYS_DATA[day].slots.find(s => s.name === slot.name);
+      const edits = loadEdits();
+      let nextIdx = slot2.foods.length;
+      while (edits[`${day}__${slot.name}__${nextIdx}`]) nextIdx++;
+      openModal(day, slot.name, nextIdx, true);
+    });
+
+    const card = document.createElement('div');
+    card.className = 'edit-food-card';
+
+    // Map live foods back to their real indices
+    const edits = loadEdits();
+    const baseLen = slot.foods.length;
+    const allIndices = [];
+    // base foods not deleted
+    for (let i = 0; i < baseLen; i++) {
+      const key = `${day}__${slot.name}__${i}`;
+      if (!edits[key]?._deleted) allIndices.push(i);
+    }
+    // added foods
+    Object.keys(edits).forEach(k => {
+      const [d, s, iStr] = k.split('__');
+      const i = parseInt(iStr);
+      if (d === day && s === slot.name && i >= baseLen && !edits[k]?._deleted) allIndices.push(i);
+    });
+    allIndices.sort((a,b) => a-b);
+
+    allIndices.forEach(realIdx => {
+      const key = `${day}__${slot.name}__${realIdx}`;
+      const base = slot.foods[realIdx] || {};
+      const food = edits[key] ? { ...base, ...edits[key] } : { ...base };
+      const isEdited = !!edits[key];
+
+      const row = document.createElement('div');
+      row.className = 'edit-food-row';
+      row.innerHTML = `
+        <div class="edit-food-info">
+          <div class="edit-food-name">${food.name}${isEdited ? ' <span style="font-size:10px;color:var(--blue);font-weight:600;">edited</span>' : ''}</div>
+          <div class="edit-food-sub">${food.cal} cal · ${food.prot}g pro · $${(food.cost||0).toFixed(2)}</div>
+        </div>
+        <div class="edit-chevron">›</div>`;
+      row.addEventListener('click', () => openModal(day, slot.name, realIdx, false));
+      card.appendChild(row);
+    });
+
+    if (allIndices.length === 0) {
+      card.innerHTML = '<div style="padding:14px 16px;font-size:13px;color:var(--text3);">No foods — tap + Add food above.</div>';
+    }
+
+    group.appendChild(card);
+    container.appendChild(group);
+  });
+}
+
+// Override getDayTotals to respect edits
+const _origGetDayTotals = getDayTotals;
+function getDayTotals(date, day) {
+  const edits = loadEdits();
+  let cal=0, prot=0, fat=0, carb=0, cost=0;
+  DAYS_DATA[day].slots.forEach(slot => {
+    const livefoods = getLiveSlotFoods(day, slot.name);
+    livefoods.forEach(food => {
+      if (isChecked(date, day, slot.name, food.name)) {
+        cal+=food.cal||0; prot+=food.prot||0; fat+=food.fat||0; carb+=food.carb||0; cost+=food.cost||0;
+      }
+    });
+  });
+  return { cal, prot, fat, carb, cost };
+}
+
 function showScreen(name) {
   currentScreen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -927,6 +1422,7 @@ function showScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'history') renderHistory();
+  if (name === 'edit') renderEditDay(editDay);
 }
 
 function init() {
@@ -947,6 +1443,17 @@ function init() {
     btn.textContent = d.slice(0,3) + suffix;
     btn.addEventListener('click', () => renderDay(d));
     pillContainer.appendChild(btn);
+  });
+
+  // Edit day tabs
+  const tabContainer = document.getElementById('edit-day-tabs');
+  DAY_NAMES.forEach(d => {
+    const tab = document.createElement('button');
+    tab.className = 'edit-tab' + (d === DAY_NAMES[0] ? ' active' : '');
+    tab.dataset.day = d;
+    tab.textContent = d.slice(0,3);
+    tab.addEventListener('click', () => renderEditDay(d));
+    tabContainer.appendChild(tab);
   });
 
   document.getElementById('date-input').addEventListener('change', () => {
