@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lean Bulk">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Lean Bulk Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --text2: #636366;
+    --text3: #aeaeb2;
+    --border: #e5e5ea;
+    --accent: #34c759;
+    --accent-bg: #e8fbed;
+    --accent-dark: #248a3d;
+    --orange: #ff9500;
+    --purple: #af52de;
+    --purple-bg: #f5eeff;
+    --red: #ff3b30;
+    --blue: #007aff;
+    --lift-bg: #eaf3de;
+    --lift-text: #2d6a1b;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #ffffff;
+      --text2: #ebebf5cc;
+      --text3: #ebebf560;
+      --border: #38383a;
+      --accent-bg: #1a3a22;
+      --purple-bg: #2a1a3a;
+      --lift-bg: #1a2e10;
+      --lift-text: #7ed95a;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: calc(80px + var(--safe-bottom));
+    padding-top: var(--safe-top);
+  }
+
+  /* Header */
+  .header {
+    background: var(--card);
+    border-bottom: 0.5px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .app-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .date-display {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  /* Day pills */
+  .day-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+  }
+  .day-scroll::-webkit-scrollbar { display: none; }
+
+  .day-pill {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--text2);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    transition: all 0.15s;
+  }
+
+  .day-pill.active {
+    background: var(--text);
+    color: var(--card);
+  }
+
+  .day-pill .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-left: 4px;
+    vertical-align: middle;
+    margin-bottom: 1px;
+  }
+
+  /* Summary cards */
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .sum-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    text-align: center;
+  }
+
+  .sum-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .sum-val {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .sum-val.green { color: var(--accent-dark); }
+
+  /* Progress bar */
+  .progress-wrap {
+    padding: 0 16px 4px;
+  }
+
+  .progress-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    max-width: 100%;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  /* Meal sections */
+  .slots-container {
+    padding: 0 16px;
+  }
+
+  .slot-group {
+    margin-bottom: 12px;
+  }
+
+  .slot-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 4px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .slot-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .slot-badge.cheat { background: var(--purple-bg); color: var(--purple); }
+  .slot-badge.free { background: var(--accent-bg); color: var(--accent-dark); }
+  .slot-badge.lift { background: var(--lift-bg); color: var(--lift-text); }
+
+  .slot-card {
+    background: var(--card);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .food-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+    border-bottom: 0.5px solid var(--border);
+    -webkit-user-select: none;
+  }
+
+  .food-row:last-child { border-bottom: none; }
+  .food-row:active { background: var(--bg); }
+  .food-row.checked { background: var(--accent-bg); }
+
+  .checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    background: var(--card);
+  }
+
+  .food-row.checked .checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkmark {
+    width: 12px;
+    height: 9px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .food-row.checked .checkmark { opacity: 1; }
+
+  .food-body { flex: 1; min-width: 0; }
+
+  .food-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+
+  .food-row.checked .food-name { color: var(--accent-dark); }
+
+  .food-macros {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+  }
+
+  .food-cost {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  .food-row.checked .food-cost { color: var(--accent-dark); }
+
+  .free-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--accent-bg);
+    color: var(--accent-dark);
+    margin-left: 6px;
+    vertical-align: middle;
+    font-weight: 600;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 8px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    gap: 3px;
+  }
+
+  .nav-icon { font-size: 22px; }
+
+  .nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.2px;
+  }
+
+  .nav-btn.active .nav-label { color: var(--blue); }
+
+  /* History screen */
+  .screen { display: none; padding: 0 16px; }
+  .screen.active { display: block; }
+
+  .screen-title {
+    font-size: 22px;
+    font-weight: 700;
+    padding: 16px 4px 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .history-card {
+    background: var(--card);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .history-row:last-child { border-bottom: none; }
+
+  .history-date {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .history-day-name {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  .history-foods {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .history-right { text-align: right; }
+
+  .history-stats {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .history-cost {
+    font-size: 12px;
+    color: var(--accent-dark);
+    margin-top: 2px;
+  }
+
+  .clear-entry {
+    font-size: 11px;
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+    font-size: 15px;
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Date picker section */
+  .date-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px 0;
+  }
+
+  .date-picker-row label {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .date-picker-row input[type="date"] {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 0.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+
+  .day-type-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .tag-lift { background: var(--lift-bg); color: var(--lift-text); }
+  .tag-rest { background: var(--border); color: var(--text2); }
+  .tag-free { background: var(--accent-bg); color: var(--accent-dark); }
+  .tag-cheat { background: var(--purple-bg); color: var(--purple); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="app-title">Lean Bulk</div>
+    <div class="date-display" id="header-date"></div>
+  </div>
+  <div class="day-scroll" id="day-pills"></div>
+</div>
+
+<!-- Screen: Today -->
+<div class="screen active" id="screen-today">
+  <div class="date-picker-row">
+    <label>Date</label>
+    <input type="date" id="date-input">
+    <span class="day-type-tag" id="day-type-tag"></span>
+  </div>
+
+  <div class="summary-strip">
+    <div class="sum-card"><div class="sum-label">Cal</div><div class="sum-val" id="s-cal">0</div></div>
+    <div class="sum-card"><div class="sum-label">Protein</div><div class="sum-val" id="s-prot">0g</div></div>
+    <div class="sum-card"><div class="sum-label">Carbs</div><div class="sum-val" id="s-carb">0g</div></div>
+    <div class="sum-card"><div class="sum-label">Cost</div><div class="sum-val green" id="s-cost">$0</div></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="cal-bar" style="width:0%"></div></div>
+    <div class="progress-label"><span id="cal-label-left">0 cal eaten</span><span>~2,750 goal</span></div>
+  </div>
+
+  <div class="slots-container" id="meal-slots"></div>
+</div>
+
+<!-- Screen: History -->
+<div class="screen" id="screen-history">
+  <div class="screen-title">History</div>
+  <div id="history-list"></div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-today" onclick="showScreen('today')">
+    <span class="nav-icon">&#x1F957;</span>
+    <span class="nav-label">Today</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showScreen('history')">
+    <span class="nav-icon">&#x1F4CA;</span>
+    <span class="nav-label">History</span>
+  </button>
+</div>
+
+<script>
+const DAYS_DATA = {
+  Sunday: {
+    lift: true,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club + Chips', cal: 750, prot: 40, fat: 26, carb: 82, cost: 8.09 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Apple (medium)', cal: 95, prot: 0, fat: 0, carb: 25, cost: 0.80 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Bro Burger Helper (ECB)', cal: 580, prot: 38, fat: 18, carb: 58, cost: 14.99 },
+      ]},
+      { name: 'Evening', foods: [
+        { name: 'PB Toast (2 slices + 2 tbsp PB)', cal: 350, prot: 15, fat: 18, carb: 36, cost: 1.00 },
+        { name: 'Banana (medium)', cal: 105, prot: 1, fat: 0, carb: 27, cost: 0.25 },
+      ]},
+    ]
+  },
+  Monday: {
+    lift: false, cheat: true,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club (no chips)', cal: 620, prot: 38, fat: 22, carb: 70, cost: 8.50 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Banana (medium)', cal: 105, prot: 1, fat: 0, carb: 27, cost: 0.25 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Roasted Lemon-Herb Salmon (ECB)', cal: 500, prot: 40, fat: 18, carb: 38, cost: 19.99 },
+      ]},
+      { name: 'Cheat Snack', cheat: true, foods: [
+        { name: 'Häagen-Dazs Choc PB (½ cup)', cal: 360, prot: 7, fat: 24, carb: 31, cost: 1.50 },
+      ]},
+    ]
+  },
+  Tuesday: {
+    lift: true,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club + Chips', cal: 750, prot: 40, fat: 26, carb: 82, cost: 8.09 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Dried Mango (1 oz)', cal: 100, prot: 1, fat: 0, carb: 24, cost: 0.50 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Thai Chicken Peanut Noodles (ECB)', cal: 540, prot: 35, fat: 20, carb: 55, cost: 14.75 },
+      ]},
+      { name: 'Evening', foods: [
+        { name: 'PB Toast (2 slices + 2 tbsp PB)', cal: 350, prot: 15, fat: 18, carb: 36, cost: 1.00 },
+        { name: 'Banana (medium)', cal: 105, prot: 1, fat: 0, carb: 27, cost: 0.25 },
+      ]},
+    ]
+  },
+  Wednesday: {
+    lift: false, cheat: true,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club (no chips)', cal: 620, prot: 38, fat: 22, carb: 70, cost: 8.50 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Grapes or Raisins (1 oz)', cal: 70, prot: 1, fat: 0, carb: 18, cost: 0.50 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Beef & Bean Chili (ECB)', cal: 520, prot: 38, fat: 14, carb: 55, cost: 16.49 },
+        { name: 'Microwave Rice Pouch (optional)', cal: 200, prot: 4, fat: 1, carb: 44, cost: 1.50 },
+      ]},
+      { name: 'Cheat Snack', cheat: true, foods: [
+        { name: 'Häagen-Dazs Choc PB (½ cup)', cal: 360, prot: 7, fat: 24, carb: 31, cost: 1.50 },
+      ]},
+    ]
+  },
+  Thursday: {
+    lift: false,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club (no chips)', cal: 620, prot: 38, fat: 22, carb: 70, cost: 8.50 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Banana (medium)', cal: 105, prot: 1, fat: 0, carb: 27, cost: 0.25 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Chicken Parm (ECB)', cal: 540, prot: 37, fat: 16, carb: 58, cost: 14.99 },
+      ]},
+      { name: 'Evening', foods: [
+        { name: 'PB Toast (2 slices + 2 tbsp PB)', cal: 350, prot: 15, fat: 18, carb: 36, cost: 1.00 },
+      ]},
+    ]
+  },
+  Friday: {
+    lift: true, cheat: true,
+    slots: [
+      { name: 'Morning', foods: [
+        { name: 'Fit Crunch Bar', cal: 190, prot: 30, fat: 7, carb: 25, cost: 2.50 },
+        { name: 'Greek Yogurt (1 cup)', cal: 150, prot: 17, fat: 4, carb: 12, cost: 1.20 },
+        { name: 'Granola (¼ cup)', cal: 120, prot: 3, fat: 4, carb: 20, cost: 0.40 },
+      ]},
+      { name: 'Mid-Morning', foods: [
+        { name: 'Huel RTD Chocolate', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+      { name: 'Lunch', foods: [
+        { name: 'Wawa Turkey Club + Chips', cal: 750, prot: 40, fat: 26, carb: 82, cost: 8.09 },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Dried Mango (1 oz)', cal: 100, prot: 1, fat: 0, carb: 24, cost: 0.50 },
+      ]},
+      { name: 'Dinner', foods: [
+        { name: 'Pepper Steak Stir-Fry (ECB)', cal: 530, prot: 39, fat: 15, carb: 55, cost: 16.49 },
+      ]},
+      { name: 'Cheat Snack', cheat: true, foods: [
+        { name: 'Häagen-Dazs Choc PB (½ cup)', cal: 360, prot: 7, fat: 24, carb: 31, cost: 1.50 },
+      ]},
+    ]
+  },
+  Saturday: {
+    lift: false, free: true,
+    slots: [
+      { name: 'Morning', free: true, foods: [
+        { name: 'Free — eat anything', cal: 0, prot: 0, fat: 0, carb: 0, cost: 0, free: true },
+      ]},
+      { name: 'Lunch', free: true, foods: [
+        { name: 'Free — eat anything', cal: 0, prot: 0, fat: 0, carb: 0, cost: 0, free: true },
+      ]},
+      { name: 'Afternoon', foods: [
+        { name: 'Mixed Nuts (1 oz)', cal: 170, prot: 5, fat: 15, carb: 6, cost: 0.60 },
+        { name: 'Any fruit (your choice)', cal: 85, prot: 1, fat: 0, carb: 22, cost: 0.50 },
+      ]},
+      { name: 'Dinner', free: true, foods: [
+        { name: 'Free — takeout or anything', cal: 0, prot: 0, fat: 0, carb: 0, cost: 0, free: true },
+      ]},
+      { name: 'Evening', foods: [
+        { name: 'Huel RTD Chocolate (if underate)', cal: 400, prot: 20, fat: 13, carb: 40, cost: 5.67 },
+      ]},
+    ]
+  },
+};
+
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const GOAL_CAL = 2750;
+let currentDay = DAY_NAMES[new Date().getDay()];
+let currentScreen = 'today';
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getDateInput() {
+  return document.getElementById('date-input').value || getTodayStr();
+}
+
+function lsKey(date, day, slot, food) {
+  return `lb_${date}_${day}_${slot}_${food}`.replace(/\s+/g,'_');
+}
+
+function isChecked(date, day, slot, food) {
+  try { return localStorage.getItem(lsKey(date,day,slot,food)) === '1'; } catch(e) { return false; }
+}
+
+function setChecked(date, day, slot, food, val) {
+  try {
+    if (val) localStorage.setItem(lsKey(date,day,slot,food),'1');
+    else localStorage.removeItem(lsKey(date,day,slot,food));
+  } catch(e) {}
+}
+
+function getDayTotals(date, day) {
+  let cal=0, prot=0, fat=0, carb=0, cost=0;
+  DAYS_DATA[day].slots.forEach(slot => {
+    slot.foods.forEach(food => {
+      if (isChecked(date, day, slot.name, food.name)) {
+        cal+=food.cal; prot+=food.prot; fat+=food.fat; carb+=food.carb; cost+=food.cost;
+      }
+    });
+  });
+  return { cal, prot, fat, carb, cost };
+}
+
+function updateSummary() {
+  const date = getDateInput();
+  const t = getDayTotals(date, currentDay);
+  document.getElementById('s-cal').textContent = t.cal;
+  document.getElementById('s-prot').textContent = t.prot + 'g';
+  document.getElementById('s-carb').textContent = t.carb + 'g';
+  document.getElementById('s-cost').textContent = '$' + t.cost.toFixed(2);
+  const pct = Math.min(100, Math.round((t.cal / GOAL_CAL) * 100));
+  document.getElementById('cal-bar').style.width = pct + '%';
+  document.getElementById('cal-label-left').textContent = t.cal + ' cal eaten';
+}
+
+function updateDayPills() {
+  const date = getDateInput();
+  DAY_NAMES.forEach(d => {
+    const btn = document.getElementById('pill-' + d);
+    if (!btn) return;
+    const has = DAYS_DATA[d].slots.some(s => s.foods.some(f => isChecked(date, d, s.name, f.name)));
+    const dotEl = btn.querySelector('.dot');
+    if (has && !dotEl) {
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      btn.appendChild(dot);
+    } else if (!has && dotEl) {
+      dotEl.remove();
+    }
+  });
+}
+
+function renderDay(day) {
+  currentDay = day;
+  const date = getDateInput();
+  const data = DAYS_DATA[day];
+
+  document.querySelectorAll('.day-pill').forEach(b => b.classList.toggle('active', b.dataset.day === day));
+
+  const tag = document.getElementById('day-type-tag');
+  if (data.lift && data.cheat) { tag.textContent = 'Lift + Cheat'; tag.className = 'day-type-tag tag-lift'; }
+  else if (data.lift) { tag.textContent = 'Lift Day'; tag.className = 'day-type-tag tag-lift'; }
+  else if (data.free) { tag.textContent = 'Free Day'; tag.className = 'day-type-tag tag-free'; }
+  else if (data.cheat) { tag.textContent = 'Rest + Cheat'; tag.className = 'day-type-tag tag-cheat'; }
+  else { tag.textContent = 'Rest Day'; tag.className = 'day-type-tag tag-rest'; }
+
+  const container = document.getElementById('meal-slots');
+  container.innerHTML = '';
+
+  data.slots.forEach(slot => {
+    const group = document.createElement('div');
+    group.className = 'slot-group';
+
+    const checkedCount = slot.foods.filter(f => isChecked(date, day, slot.name, f.name)).length;
+    let badgeHtml = '';
+    if (slot.cheat) badgeHtml = `<span class="slot-badge cheat">cheat night</span>`;
+    else if (slot.free) badgeHtml = `<span class="slot-badge free">free</span>`;
+    else if (slot.name === 'Morning' && data.lift) badgeHtml = `<span class="slot-badge lift">lift day</span>`;
+
+    group.innerHTML = `<div class="slot-label">${slot.name} <span style="display:flex;align-items:center;gap:6px;">${checkedCount}/${slot.foods.length}${badgeHtml}</span></div>`;
+
+    const card = document.createElement('div');
+    card.className = 'slot-card';
+
+    slot.foods.forEach(food => {
+      const checked = isChecked(date, day, slot.name, food.name);
+      const row = document.createElement('div');
+      row.className = 'food-row' + (checked ? ' checked' : '');
+
+      const freeBadge = food.free ? '<span class="free-badge">free</span>' : '';
+      const macroStr = food.cal > 0
+        ? `${food.cal} cal · ${food.prot}g protein · ${food.carb}g carbs`
+        : 'Not tracked — free choice';
+      const costStr = food.cost > 0 ? '$' + food.cost.toFixed(2) : '—';
+
+      row.innerHTML = `
+        <div class="checkbox">
+          <svg class="checkmark" viewBox="0 0 12 9" fill="none">
+            <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="food-body">
+          <div class="food-name">${food.name}${freeBadge}</div>
+          <div class="food-macros">${macroStr}</div>
+        </div>
+        <div class="food-cost">${costStr}</div>`;
+
+      row.addEventListener('click', () => {
+        const cur = isChecked(date, day, slot.name, food.name);
+        setChecked(date, day, slot.name, food.name, !cur);
+        row.classList.toggle('checked', !cur);
+        // update slot counter
+        const newCount = slot.foods.filter(f => isChecked(date, day, slot.name, f.name)).length;
+        group.querySelector('.slot-label span').innerHTML = `${newCount}/${slot.foods.length}${badgeHtml}`;
+        updateSummary();
+        updateDayPills();
+      });
+
+      card.appendChild(row);
+    });
+
+    group.appendChild(card);
+    container.appendChild(group);
+  });
+
+  updateSummary();
+  updateDayPills();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const entries = {};
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('lb_') && localStorage.getItem(k) === '1') {
+        const parts = k.replace('lb_','').split('_');
+        const date = parts[0], day = parts[1];
+        if (!entries[date]) entries[date] = { day, items: [] };
+        entries[date].items.push(parts.slice(3).join(' '));
+      }
+    }
+  } catch(e) {}
+
+  const dates = Object.keys(entries).sort().reverse();
+
+  if (dates.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4CA;</div>No entries yet.<br>Start checking off meals on the Today tab.</div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  dates.forEach(date => {
+    const e = entries[date];
+    const day = e.day;
+    if (!DAYS_DATA[day]) return;
+    const t = getDayTotals(date, day);
+    const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    const foodNames = e.items.slice(0,3).join(', ') + (e.items.length > 3 ? ` +${e.items.length-3} more` : '');
+
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    card.innerHTML = `<div class="history-row">
+      <div>
+        <div class="history-date">${label}</div>
+        <div class="history-day-name">${day}</div>
+        <div class="history-foods">${foodNames}</div>
+      </div>
+      <div class="history-right">
+        <div class="history-stats">${t.cal} cal · ${t.prot}g prot</div>
+        <div class="history-cost">$${t.cost.toFixed(2)}</div>
+        <button class="clear-entry" data-date="${date}" data-day="${day}">Clear</button>
+      </div>
+    </div>`;
+
+    card.querySelector('.clear-entry').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const d = ev.target.dataset.date, dy = ev.target.dataset.day;
+      if (!DAYS_DATA[dy]) return;
+      DAYS_DATA[dy].slots.forEach(s => s.foods.forEach(f => {
+        try { localStorage.removeItem(lsKey(d, dy, s.name, f.name)); } catch(e2) {}
+      }));
+      renderHistory();
+      if (d === getDateInput() && dy === currentDay) renderDay(currentDay);
+    });
+
+    list.appendChild(card);
+  });
+}
+
+function showScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'history') renderHistory();
+}
+
+function init() {
+  const today = getTodayStr();
+  document.getElementById('date-input').value = today;
+
+  const now = new Date();
+  document.getElementById('header-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  const pillContainer = document.getElementById('day-pills');
+  DAY_NAMES.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'day-pill' + (d === currentDay ? ' active' : '');
+    btn.id = 'pill-' + d;
+    btn.dataset.day = d;
+    const data = DAYS_DATA[d];
+    const suffix = data.lift ? ' ·L' : data.free ? ' ·F' : '';
+    btn.textContent = d.slice(0,3) + suffix;
+    btn.addEventListener('click', () => renderDay(d));
+    pillContainer.appendChild(btn);
+  });
+
+  document.getElementById('date-input').addEventListener('change', () => {
+    renderDay(currentDay);
+  });
+
+  renderDay(currentDay);
+}
+
+init();
+</script>
+</body>
+</html>
