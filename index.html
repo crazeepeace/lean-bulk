@@ -678,6 +678,16 @@
     border: none;
     cursor: pointer;
   }
+
+  .ac-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:active { background: var(--bg); }
+  .ac-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .ac-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
 </style>
 </head>
 <body>
@@ -736,9 +746,10 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">Edit Food</div>
     <div class="modal-body">
-      <div class="field-group">
+      <div class="field-group" style="position:relative;">
         <div class="field-label">Food Name</div>
-        <input class="field-input" id="f-name" type="text" placeholder="e.g. Greek Yogurt">
+        <input class="field-input" id="f-name" type="text" placeholder="e.g. Greek Yogurt" autocomplete="off">
+        <div id="ac-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border:0.5px solid var(--border);border-radius:12px;margin-top:4px;z-index:300;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);"></div>
       </div>
       <div class="macro-grid">
         <div class="field-group">
@@ -790,6 +801,7 @@
 </div>
 
 <script>
+// ── DATA ──
 const DAYS_DATA = {
   Sunday: {
     lift: true,
@@ -975,39 +987,87 @@ const DAYS_DATA = {
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const GOAL_CAL = 2750;
+const EDIT_KEY = 'lb_plan_edits';
 let currentDay = DAY_NAMES[new Date().getDay()];
 let currentScreen = 'today';
+let editDay = DAY_NAMES[0];
+let modalCtx = null;
 
+// ── STORAGE HELPERS ──
 function getTodayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
 function getDateInput() {
   return document.getElementById('date-input').value || getTodayStr();
 }
-
 function lsKey(date, day, slot, food) {
   return `lb_${date}_${day}_${slot}_${food}`.replace(/\s+/g,'_');
 }
-
 function isChecked(date, day, slot, food) {
   try { return localStorage.getItem(lsKey(date,day,slot,food)) === '1'; } catch(e) { return false; }
 }
-
 function setChecked(date, day, slot, food, val) {
   try {
     if (val) localStorage.setItem(lsKey(date,day,slot,food),'1');
     else localStorage.removeItem(lsKey(date,day,slot,food));
   } catch(e) {}
 }
+function loadEdits() {
+  try { const r = localStorage.getItem(EDIT_KEY); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function saveEdits(edits) {
+  try { localStorage.setItem(EDIT_KEY, JSON.stringify(edits)); } catch(e) {}
+}
 
+// ── LIVE FOOD DATA (merges base + edits) ──
+function getLiveSlotFoods(day, slotName) {
+  const edits = loadEdits();
+  const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
+  if (!slot) return [];
+  // Base foods, applying edits and filtering deleted
+  const result = [];
+  slot.foods.forEach((f, i) => {
+    const key = `${day}__${slotName}__${i}`;
+    if (edits[key]?._deleted) return;
+    result.push({ ...f, ...(edits[key] || {}), _baseIdx: i });
+  });
+  // Added foods (idx >= base length)
+  const added = {};
+  Object.keys(edits).forEach(k => {
+    const parts = k.split('__');
+    if (parts.length < 3) return;
+    const [d, s, iStr] = parts;
+    const i = parseInt(iStr);
+    if (d === day && s === slotName && i >= slot.foods.length && !edits[k]?._deleted) {
+      added[i] = { ...edits[k], _baseIdx: i };
+    }
+  });
+  Object.keys(added).sort((a,b)=>a-b).forEach(k => result.push(added[k]));
+  return result;
+}
+
+// Build a flat lookup of every known food across all days for autocomplete
+function buildFoodLookup() {
+  const map = {};
+  DAY_NAMES.forEach(day => {
+    DAYS_DATA[day].slots.forEach(slot => {
+      getLiveSlotFoods(day, slot.name).forEach(food => {
+        const key = food.name.toLowerCase().trim();
+        if (!map[key]) map[key] = { name: food.name, cal: food.cal, prot: food.prot, fat: food.fat, carb: food.carb, cost: food.cost };
+      });
+    });
+  });
+  return map;
+}
+
+// ── SUMMARY & PROGRESS ──
 function getDayTotals(date, day) {
   let cal=0, prot=0, fat=0, carb=0, cost=0;
   DAYS_DATA[day].slots.forEach(slot => {
-    slot.foods.forEach(food => {
+    getLiveSlotFoods(day, slot.name).forEach(food => {
       if (isChecked(date, day, slot.name, food.name)) {
-        cal+=food.cal; prot+=food.prot; fat+=food.fat; carb+=food.carb; cost+=food.cost;
+        cal+=food.cal||0; prot+=food.prot||0; fat+=food.fat||0; carb+=food.carb||0; cost+=food.cost||0;
       }
     });
   });
@@ -1015,8 +1075,7 @@ function getDayTotals(date, day) {
 }
 
 function updateSummary() {
-  const date = getDateInput();
-  const t = getDayTotals(date, currentDay);
+  const t = getDayTotals(getDateInput(), currentDay);
   document.getElementById('s-cal').textContent = t.cal;
   document.getElementById('s-prot').textContent = t.prot + 'g';
   document.getElementById('s-carb').textContent = t.carb + 'g';
@@ -1031,18 +1090,14 @@ function updateDayPills() {
   DAY_NAMES.forEach(d => {
     const btn = document.getElementById('pill-' + d);
     if (!btn) return;
-    const has = DAYS_DATA[d].slots.some(s => s.foods.some(f => isChecked(date, d, s.name, f.name)));
+    const has = DAYS_DATA[d].slots.some(s => getLiveSlotFoods(d, s.name).some(f => isChecked(date, d, s.name, f.name)));
     const dotEl = btn.querySelector('.dot');
-    if (has && !dotEl) {
-      const dot = document.createElement('span');
-      dot.className = 'dot';
-      btn.appendChild(dot);
-    } else if (!has && dotEl) {
-      dotEl.remove();
-    }
+    if (has && !dotEl) { const dot = document.createElement('span'); dot.className='dot'; btn.appendChild(dot); }
+    else if (!has && dotEl) dotEl.remove();
   });
 }
 
+// ── TODAY SCREEN ──
 function renderDay(day) {
   currentDay = day;
   const date = getDateInput();
@@ -1052,41 +1107,44 @@ function renderDay(day) {
 
   const tag = document.getElementById('day-type-tag');
   if (data.lift && data.cheat) { tag.textContent = 'Lift + Cheat'; tag.className = 'day-type-tag tag-lift'; }
-  else if (data.lift) { tag.textContent = 'Lift Day'; tag.className = 'day-type-tag tag-lift'; }
-  else if (data.free) { tag.textContent = 'Free Day'; tag.className = 'day-type-tag tag-free'; }
-  else if (data.cheat) { tag.textContent = 'Rest + Cheat'; tag.className = 'day-type-tag tag-cheat'; }
-  else { tag.textContent = 'Rest Day'; tag.className = 'day-type-tag tag-rest'; }
+  else if (data.lift)          { tag.textContent = 'Lift Day';    tag.className = 'day-type-tag tag-lift'; }
+  else if (data.free)          { tag.textContent = 'Free Day';    tag.className = 'day-type-tag tag-free'; }
+  else if (data.cheat)         { tag.textContent = 'Rest + Cheat'; tag.className = 'day-type-tag tag-cheat'; }
+  else                         { tag.textContent = 'Rest Day';    tag.className = 'day-type-tag tag-rest'; }
 
   const container = document.getElementById('meal-slots');
   container.innerHTML = '';
 
   data.slots.forEach(slot => {
+    const liveFoods = getLiveSlotFoods(day, slot.name);
     const group = document.createElement('div');
     group.className = 'slot-group';
 
-    const checkedCount = slot.foods.filter(f => isChecked(date, day, slot.name, f.name)).length;
     let badgeHtml = '';
     if (slot.cheat) badgeHtml = `<span class="slot-badge cheat">cheat night</span>`;
     else if (slot.free) badgeHtml = `<span class="slot-badge free">free</span>`;
     else if (slot.name === 'Morning' && data.lift) badgeHtml = `<span class="slot-badge lift">lift day</span>`;
 
-    const liveFoods = getLiveSlotFoods(day, slot.name);
-    group.innerHTML = `<div class="slot-label">${slot.name} <span style="display:flex;align-items:center;gap:6px;">${liveFoods.filter(f=>isChecked(date,day,slot.name,f.name)).length}/${liveFoods.length}${badgeHtml}</span></div>`;
+    const checkedNow = liveFoods.filter(f => isChecked(date, day, slot.name, f.name)).length;
+    const slotLabelSpan = document.createElement('div');
+    slotLabelSpan.className = 'slot-label';
+    slotLabelSpan.innerHTML = `${slot.name} <span style="display:flex;align-items:center;gap:6px;">${checkedNow}/${liveFoods.length}${badgeHtml}</span>`;
+    group.appendChild(slotLabelSpan);
 
     const card = document.createElement('div');
     card.className = 'slot-card';
 
     liveFoods.forEach(food => {
       const checked = isChecked(date, day, slot.name, food.name);
-
-      const freeBadge = food.free ? '<span class="free-badge">free</span>' : '';
-      const macroStr = food.cal > 0
-        ? `${food.cal} cal · ${food.prot}g protein · ${food.carb}g carbs`
-        : 'Not tracked — free choice';
-      const costStr = food.cost > 0 ? '$' + food.cost.toFixed(2) : '—';
-
       const row = document.createElement('div');
       row.className = 'food-row' + (checked ? ' checked' : '');
+
+      const freeBadge = food.free ? '<span class="free-badge">free</span>' : '';
+      const macroStr = (food.cal||0) > 0
+        ? `${food.cal} cal · ${food.prot}g protein · ${food.carb}g carbs`
+        : 'Not tracked — free choice';
+      const costStr = (food.cost||0) > 0 ? '$' + food.cost.toFixed(2) : '—';
+
       row.innerHTML = `
         <div class="checkbox">
           <svg class="checkmark" viewBox="0 0 12 9" fill="none">
@@ -1104,8 +1162,8 @@ function renderDay(day) {
         setChecked(date, day, slot.name, food.name, !cur);
         row.classList.toggle('checked', !cur);
         const lf = getLiveSlotFoods(day, slot.name);
-        const newCount = lf.filter(f => isChecked(date, day, slot.name, f.name)).length;
-        group.querySelector('.slot-label span').innerHTML = `${newCount}/${lf.length}${badgeHtml}`;
+        const nc = lf.filter(f => isChecked(date, day, slot.name, f.name)).length;
+        slotLabelSpan.innerHTML = `${slot.name} <span style="display:flex;align-items:center;gap:6px;">${nc}/${lf.length}${badgeHtml}</span>`;
         updateSummary();
         updateDayPills();
       });
@@ -1121,131 +1179,113 @@ function renderDay(day) {
   updateDayPills();
 }
 
+// ── HISTORY SCREEN ──
 function renderHistory() {
   const list = document.getElementById('history-list');
   const entries = {};
-
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('lb_') && localStorage.getItem(k) === '1') {
+      if (k && k.startsWith('lb_') && k !== EDIT_KEY && localStorage.getItem(k) === '1') {
         const parts = k.replace('lb_','').split('_');
         const date = parts[0], day = parts[1];
-        if (!entries[date]) entries[date] = { day, items: [] };
-        entries[date].items.push(parts.slice(3).join(' '));
+        if (DAYS_DATA[day]) {
+          if (!entries[date]) entries[date] = { day, items: [] };
+          entries[date].items.push(parts.slice(3).join(' '));
+        }
       }
     }
   } catch(e) {}
 
   const dates = Object.keys(entries).sort().reverse();
-
   if (dates.length === 0) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4CA;</div>No entries yet.<br>Start checking off meals on the Today tab.</div>`;
     return;
   }
-
   list.innerHTML = '';
   dates.forEach(date => {
     const e = entries[date];
-    const day = e.day;
-    if (!DAYS_DATA[day]) return;
-    const t = getDayTotals(date, day);
-    const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-    const foodNames = e.items.slice(0,3).join(', ') + (e.items.length > 3 ? ` +${e.items.length-3} more` : '');
-
+    const t = getDayTotals(date, e.day);
+    const label = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const foodNames = e.items.slice(0,3).join(', ') + (e.items.length>3 ? ` +${e.items.length-3} more` : '');
     const card = document.createElement('div');
     card.className = 'history-card';
     card.innerHTML = `<div class="history-row">
       <div>
         <div class="history-date">${label}</div>
-        <div class="history-day-name">${day}</div>
+        <div class="history-day-name">${e.day}</div>
         <div class="history-foods">${foodNames}</div>
       </div>
       <div class="history-right">
         <div class="history-stats">${t.cal} cal · ${t.prot}g prot</div>
         <div class="history-cost">$${t.cost.toFixed(2)}</div>
-        <button class="clear-entry" data-date="${date}" data-day="${day}">Clear</button>
+        <button class="clear-entry" data-date="${date}" data-day="${e.day}">Clear</button>
       </div>
     </div>`;
-
-    card.querySelector('.clear-entry').addEventListener('click', (ev) => {
+    card.querySelector('.clear-entry').addEventListener('click', ev => {
       ev.stopPropagation();
       const d = ev.target.dataset.date, dy = ev.target.dataset.day;
-      if (!DAYS_DATA[dy]) return;
-      DAYS_DATA[dy].slots.forEach(s => s.foods.forEach(f => {
+      DAYS_DATA[dy].slots.forEach(s => getLiveSlotFoods(dy, s.name).forEach(f => {
         try { localStorage.removeItem(lsKey(d, dy, s.name, f.name)); } catch(e2) {}
       }));
       renderHistory();
       if (d === getDateInput() && dy === currentDay) renderDay(currentDay);
     });
-
     list.appendChild(card);
   });
 }
 
-// ── EDIT PLAN LOGIC ──
+// ── AUTOCOMPLETE ──
+let acResults = [];
+let acVisible = false;
 
-const EDIT_KEY = 'lb_plan_edits';
-let editDay = DAY_NAMES[0];
-let modalCtx = null; // { day, slotName, foodIdx, isNew }
-
-function loadEdits() {
-  try {
-    const raw = localStorage.getItem(EDIT_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch(e) { return {}; }
+function buildAcList() {
+  const map = buildFoodLookup();
+  return Object.values(map);
 }
 
-function saveEdits(edits) {
-  try { localStorage.setItem(EDIT_KEY, JSON.stringify(edits)); } catch(e) {}
-}
-
-// Get live food data (default merged with any saved edits)
-function getLiveFood(day, slotName, foodIdx) {
-  const edits = loadEdits();
-  const key = `${day}__${slotName}__${foodIdx}`;
-  const base = DAYS_DATA[day].slots.find(s => s.name === slotName)?.foods[foodIdx];
-  if (!base) return null;
-  return edits[key] ? { ...base, ...edits[key] } : { ...base };
-}
-
-function getLiveSlotFoods(day, slotName) {
-  const edits = loadEdits();
-  const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
-  if (!slot) return [];
-  const base = slot.foods.map((f, i) => {
-    const key = `${day}__${slotName}__${i}`;
-    return edits[key] ? { ...f, ...edits[key] } : { ...f };
+function showAutocomplete(query) {
+  const dropdown = document.getElementById('ac-dropdown');
+  if (!query || query.length < 2) { dropdown.style.display='none'; acVisible=false; return; }
+  const q = query.toLowerCase();
+  acResults = buildAcList().filter(f => f.name.toLowerCase().includes(q)).slice(0, 6);
+  if (acResults.length === 0) { dropdown.style.display='none'; acVisible=false; return; }
+  dropdown.innerHTML = '';
+  acResults.forEach(food => {
+    const item = document.createElement('div');
+    item.className = 'ac-item';
+    item.innerHTML = `<div class="ac-name">${food.name}</div><div class="ac-sub">${food.cal} cal · ${food.prot}g pro · $${(food.cost||0).toFixed(2)}</div>`;
+    item.addEventListener('mousedown', e => { e.preventDefault(); fillFromAutocomplete(food); });
+    item.addEventListener('touchstart', e => { e.preventDefault(); fillFromAutocomplete(food); }, {passive:false});
+    dropdown.appendChild(item);
   });
-  // Also include any added foods (idx >= base length)
-  const added = [];
-  Object.keys(edits).forEach(k => {
-    const [d, s, iStr] = k.split('__');
-    const i = parseInt(iStr);
-    if (d === day && s === slotName && i >= slot.foods.length && edits[k] && !edits[k]._deleted) {
-      added[i - slot.foods.length] = { ...edits[k], _addedIdx: i };
-    }
-  });
-  const combined = [...base.filter((f,i) => {
-    const key = `${day}__${slotName}__${i}`;
-    return !edits[key]?._deleted;
-  }), ...added.filter(Boolean)];
-  return combined;
+  dropdown.style.display = 'block';
+  acVisible = true;
 }
 
+function fillFromAutocomplete(food) {
+  document.getElementById('f-name').value = food.name;
+  document.getElementById('f-cal').value = food.cal ?? '';
+  document.getElementById('f-prot').value = food.prot ?? '';
+  document.getElementById('f-fat').value = food.fat ?? '';
+  document.getElementById('f-carb').value = food.carb ?? '';
+  document.getElementById('f-cost').value = food.cost ?? '';
+  document.getElementById('ac-dropdown').style.display = 'none';
+  acVisible = false;
+}
+
+// ── EDIT PLAN SCREEN ──
 function openModal(day, slotName, foodIdx, isNew) {
   modalCtx = { day, slotName, foodIdx, isNew };
   const edits = loadEdits();
   let food;
   if (isNew) {
-    food = { name: '', cal: '', prot: '', fat: '', carb: '', cost: '' };
+    food = { name:'', cal:'', prot:'', fat:'', carb:'', cost:'' };
   } else {
     const key = `${day}__${slotName}__${foodIdx}`;
-    const base = DAYS_DATA[day].slots.find(s => s.name === slotName)?.foods[foodIdx]
-      || edits[key] || {};
+    const base = DAYS_DATA[day].slots.find(s => s.name === slotName)?.foods[foodIdx] || edits[key] || {};
     food = edits[key] ? { ...base, ...edits[key] } : { ...base };
   }
-
   document.getElementById('modal-title').textContent = isNew ? 'Add Food' : 'Edit Food';
   document.getElementById('f-name').value = food.name || '';
   document.getElementById('f-cal').value = food.cal ?? '';
@@ -1254,13 +1294,15 @@ function openModal(day, slotName, foodIdx, isNew) {
   document.getElementById('f-carb').value = food.carb ?? '';
   document.getElementById('f-cost').value = food.cost ?? '';
   document.getElementById('btn-delete').style.display = isNew ? 'none' : 'block';
+  document.getElementById('ac-dropdown').style.display = 'none';
   document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('f-name').focus(), 100);
+  setTimeout(() => document.getElementById('f-name').focus(), 150);
 }
 
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('ac-dropdown').style.display = 'none';
   modalCtx = null;
 }
 
@@ -1269,25 +1311,20 @@ function saveFood() {
   const { day, slotName, foodIdx, isNew } = modalCtx;
   const name = document.getElementById('f-name').value.trim();
   if (!name) { document.getElementById('f-name').focus(); return; }
-
   const edits = loadEdits();
   let idx = foodIdx;
-
   if (isNew) {
     const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
-    const baseLen = slot ? slot.foods.length : 0;
-    // Find next available index
-    let next = baseLen;
+    let next = slot ? slot.foods.length : 0;
     while (edits[`${day}__${slotName}__${next}`]) next++;
     idx = next;
   }
-
   const key = `${day}__${slotName}__${idx}`;
   edits[key] = {
     name,
-    cal: parseFloat(document.getElementById('f-cal').value) || 0,
+    cal:  parseFloat(document.getElementById('f-cal').value)  || 0,
     prot: parseFloat(document.getElementById('f-prot').value) || 0,
-    fat: parseFloat(document.getElementById('f-fat').value) || 0,
+    fat:  parseFloat(document.getElementById('f-fat').value)  || 0,
     carb: parseFloat(document.getElementById('f-carb').value) || 0,
     cost: parseFloat(document.getElementById('f-cost').value) || 0,
   };
@@ -1295,8 +1332,7 @@ function saveFood() {
   document.getElementById('modal-overlay').classList.remove('open');
   modalCtx = null;
   renderEditDay(day);
-  // Refresh today view if on same day
-  if (currentScreen === 'today') renderDay(currentDay);
+  renderDay(currentDay);
 }
 
 function deleteFood() {
@@ -1305,25 +1341,20 @@ function deleteFood() {
   const edits = loadEdits();
   const key = `${day}__${slotName}__${foodIdx}`;
   const slot = DAYS_DATA[day].slots.find(s => s.name === slotName);
-  if (slot && foodIdx >= slot.foods.length) {
-    // It's an added food — fully remove
-    delete edits[key];
-  } else {
-    // It's a base food — mark deleted
-    edits[key] = { ...edits[key], _deleted: true };
-  }
+  if (slot && foodIdx >= slot.foods.length) delete edits[key];
+  else edits[key] = { ...(edits[key]||{}), _deleted: true };
   saveEdits(edits);
   document.getElementById('modal-overlay').classList.remove('open');
   modalCtx = null;
   renderEditDay(day);
-  if (currentScreen === 'today') renderDay(currentDay);
+  renderDay(currentDay);
 }
 
 function resetAllEdits() {
   if (!confirm('Reset all foods to their original values? This cannot be undone.')) return;
   try { localStorage.removeItem(EDIT_KEY); } catch(e) {}
   renderEditDay(editDay);
-  if (currentScreen === 'today') renderDay(currentDay);
+  renderDay(currentDay);
 }
 
 function renderEditDay(day) {
@@ -1332,22 +1363,17 @@ function renderEditDay(day) {
   const data = DAYS_DATA[day];
   const container = document.getElementById('edit-slots');
   container.innerHTML = '';
+  const edits = loadEdits();
 
   data.slots.forEach(slot => {
     const group = document.createElement('div');
     group.className = 'edit-slot-group';
-
-    const liveFoods = getLiveSlotFoods(day, slot.name);
-    const slotIdx = data.slots.indexOf(slot);
-
     group.innerHTML = `<div class="edit-slot-header">
       ${slot.name}
-      <button class="add-food-btn" data-day="${day}" data-slot="${slot.name}">+ Add food</button>
+      <button class="add-food-btn">+ Add food</button>
     </div>`;
     group.querySelector('.add-food-btn').addEventListener('click', () => {
-      const slot2 = DAYS_DATA[day].slots.find(s => s.name === slot.name);
-      const edits = loadEdits();
-      let nextIdx = slot2.foods.length;
+      let nextIdx = slot.foods.length;
       while (edits[`${day}__${slot.name}__${nextIdx}`]) nextIdx++;
       openModal(day, slot.name, nextIdx, true);
     });
@@ -1355,66 +1381,42 @@ function renderEditDay(day) {
     const card = document.createElement('div');
     card.className = 'edit-food-card';
 
-    // Map live foods back to their real indices
-    const edits = loadEdits();
-    const baseLen = slot.foods.length;
-    const allIndices = [];
-    // base foods not deleted
-    for (let i = 0; i < baseLen; i++) {
-      const key = `${day}__${slot.name}__${i}`;
-      if (!edits[key]?._deleted) allIndices.push(i);
-    }
-    // added foods
+    // Collect all real indices (base + added, not deleted)
+    const allIdx = [];
+    slot.foods.forEach((f, i) => { if (!edits[`${day}__${slot.name}__${i}`]?._deleted) allIdx.push(i); });
     Object.keys(edits).forEach(k => {
       const [d, s, iStr] = k.split('__');
       const i = parseInt(iStr);
-      if (d === day && s === slot.name && i >= baseLen && !edits[k]?._deleted) allIndices.push(i);
+      if (d === day && s === slot.name && i >= slot.foods.length && !edits[k]?._deleted) allIdx.push(i);
     });
-    allIndices.sort((a,b) => a-b);
+    allIdx.sort((a,b) => a-b);
 
-    allIndices.forEach(realIdx => {
+    allIdx.forEach(realIdx => {
       const key = `${day}__${slot.name}__${realIdx}`;
       const base = slot.foods[realIdx] || {};
       const food = edits[key] ? { ...base, ...edits[key] } : { ...base };
       const isEdited = !!edits[key];
-
       const row = document.createElement('div');
       row.className = 'edit-food-row';
       row.innerHTML = `
         <div class="edit-food-info">
           <div class="edit-food-name">${food.name}${isEdited ? ' <span style="font-size:10px;color:var(--blue);font-weight:600;">edited</span>' : ''}</div>
-          <div class="edit-food-sub">${food.cal} cal · ${food.prot}g pro · $${(food.cost||0).toFixed(2)}</div>
+          <div class="edit-food-sub">${food.cal||0} cal · ${food.prot||0}g pro · $${(food.cost||0).toFixed(2)}</div>
         </div>
         <div class="edit-chevron">›</div>`;
       row.addEventListener('click', () => openModal(day, slot.name, realIdx, false));
       card.appendChild(row);
     });
 
-    if (allIndices.length === 0) {
+    if (allIdx.length === 0) {
       card.innerHTML = '<div style="padding:14px 16px;font-size:13px;color:var(--text3);">No foods — tap + Add food above.</div>';
     }
-
     group.appendChild(card);
     container.appendChild(group);
   });
 }
 
-// Override getDayTotals to respect edits
-const _origGetDayTotals = getDayTotals;
-function getDayTotals(date, day) {
-  const edits = loadEdits();
-  let cal=0, prot=0, fat=0, carb=0, cost=0;
-  DAYS_DATA[day].slots.forEach(slot => {
-    const livefoods = getLiveSlotFoods(day, slot.name);
-    livefoods.forEach(food => {
-      if (isChecked(date, day, slot.name, food.name)) {
-        cal+=food.cal||0; prot+=food.prot||0; fat+=food.fat||0; carb+=food.carb||0; cost+=food.cost||0;
-      }
-    });
-  });
-  return { cal, prot, fat, carb, cost };
-}
-
+// ── SCREEN SWITCHING ──
 function showScreen(name) {
   currentScreen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1423,24 +1425,23 @@ function showScreen(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'history') renderHistory();
   if (name === 'edit') renderEditDay(editDay);
+  if (name === 'today') renderDay(currentDay);
 }
 
+// ── INIT ──
 function init() {
-  const today = getTodayStr();
-  document.getElementById('date-input').value = today;
+  document.getElementById('date-input').value = getTodayStr();
+  document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
 
-  const now = new Date();
-  document.getElementById('header-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
+  // Day pills
   const pillContainer = document.getElementById('day-pills');
   DAY_NAMES.forEach(d => {
     const btn = document.createElement('button');
     btn.className = 'day-pill' + (d === currentDay ? ' active' : '');
     btn.id = 'pill-' + d;
     btn.dataset.day = d;
-    const data = DAYS_DATA[d];
-    const suffix = data.lift ? ' ·L' : data.free ? ' ·F' : '';
-    btn.textContent = d.slice(0,3) + suffix;
+    const dd = DAYS_DATA[d];
+    btn.textContent = d.slice(0,3) + (dd.lift ? ' ·L' : dd.free ? ' ·F' : '');
     btn.addEventListener('click', () => renderDay(d));
     pillContainer.appendChild(btn);
   });
@@ -1456,10 +1457,14 @@ function init() {
     tabContainer.appendChild(tab);
   });
 
-  document.getElementById('date-input').addEventListener('change', () => {
-    renderDay(currentDay);
-  });
+  // Autocomplete on food name input
+  const nameInput = document.getElementById('f-name');
+  nameInput.addEventListener('input', () => showAutocomplete(nameInput.value));
+  nameInput.addEventListener('blur', () => setTimeout(() => {
+    document.getElementById('ac-dropdown').style.display = 'none';
+  }, 150));
 
+  document.getElementById('date-input').addEventListener('change', () => renderDay(currentDay));
   renderDay(currentDay);
 }
 
